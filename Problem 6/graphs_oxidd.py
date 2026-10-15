@@ -1,16 +1,3 @@
-"""Problem 6 - Graph exploration with BDDs, using OxiDD.
-
-Install:  python -m pip install oxidd numpy
-Usage:    python problem6_oxidd.py congress_nodes.csv congress_edges.csv
-
-Encoding.  A node id s is written in binary with B bits s_{B-1} ... s_0.
-We use two copies of these bits: x for the current node and y for the next node.
-In the variable order they are interleaved, most significant bit first:
-        x_{B-1}, y_{B-1}, x_{B-2}, y_{B-2}, ..., x_0, y_0
-  T(x, y)  transition relation: true iff x -> y is an edge
-  L(x)     labelling:           true iff node x has label 1
-"""
-
 import sys, time, math
 import numpy as np
 import pandas as pd
