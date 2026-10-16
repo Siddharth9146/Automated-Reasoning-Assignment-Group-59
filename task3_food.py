@@ -20,6 +20,7 @@ What is the shortest possible driving schedule for the truck to sustain the vill
 indefinitely?
 """
 
+import time
 from z3 import *
 
 S, A, B, C = 0, 1, 2, 3
@@ -27,7 +28,7 @@ names = ["S", "A", "B", "C"]
 villages = [A, B, C]
 
 roads = [
-    (S, A, 15), 
+    (S, A, 15),
     (A, S, 15),
     (S, C, 15),
     (C, S, 15),
@@ -40,7 +41,7 @@ roads = [
 ]
 
 village_cap = {A: 90, B: 120, C: 90}
-start_stock = 60 
+start_stock = 60
 
 
 def make_steps(n):
@@ -56,7 +57,7 @@ def add_run(s, n, truck_cap, steps):
     loc, load, stock, deliver, t = steps
 
     # initial state
-    s.add(loc[0] == S, load[0] == truck_cap, t[0] == 0)
+    s.add(loc[0] == S, load[0] == truck_cap, t[0] == 0, deliver[0] == 0)
     for v in villages:
         s.add(stock[0][v] == start_stock)
 
@@ -92,13 +93,14 @@ def print_run(m, steps, upto):
     loc, load, stock, deliver, t = steps
     for k in range(upto + 1):
         where = names[m.evaluate(loc[k]).as_long()]
-        stocks = ", ".join(f"{names[v]}={m.evaluate(stock[k][v])}" for v in villages)
-        print(f"  t={m.evaluate(t[k])}: at {where}, delivered {m.evaluate(deliver[k])}, "
-              f"truck load {m.evaluate(load[k])}, {stocks}")
+        stocks = " ".join(f"{names[v]}={m.evaluate(stock[k][v])}" for v in villages)
+        print(f"  t={m.evaluate(t[k])} {where} del={m.evaluate(deliver[k])} "
+              f"load={m.evaluate(load[k])} {stocks}")
 
 
 # Part A
 print("\nPart A")
+start_time = time.perf_counter()
 best_time = 0
 best = None
 n = 1
@@ -117,7 +119,7 @@ while True:
     s.maximize(alive)
 
     if s.check() != sat:
-        print(f"No run of {n} steps exists, so the villages cannot be sustained forever")
+        print(f"No run of {n} steps")
         break
 
     m = s.model()
@@ -127,13 +129,15 @@ while True:
         best = (m, steps, n)
     n += 1
 
-print("Villages can be kept alive for at most", best_time, "time units")
+print("Max alive time:", best_time)
 m, steps, k = best
 print_run(m, steps, k)
+print(f"Time: {time.perf_counter() - start_time:.1f} s")
 
 
 # Part B
 print("\nPart B")
+start_time = time.perf_counter()
 n = 1
 while True:
     s = Optimize()
@@ -156,12 +160,15 @@ while True:
         for i in range(n):
             s.add(Implies(start == i, loops[i]))
         loop_time = Sum([If(start == i, t[n] - t[i], 0) for i in range(n)])
+        # shortest loop, then least total time
         s.minimize(loop_time)
+        s.minimize(t[n])
         s.check()
         m = s.model()
         i = m.evaluate(start).as_long()
-        print(f"Found a schedule with {n} steps, repeating from step {i} "
-              f"(loop takes {m.evaluate(loop_time)} time units)")
+        print(f"{n} steps, loop from step {i}, loop {m.evaluate(loop_time)}, "
+              f"total {m.evaluate(t[n])}")
         print_run(m, steps, n)
         break
     n += 1
+print(f"Time: {time.perf_counter() - start_time:.1f} s")
